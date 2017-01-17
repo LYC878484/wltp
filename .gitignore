@@ -12,11 +12,11 @@ dist
 build
 eggs
 parts
-bin
 var
 sdist
 /MANIFEST
 develop-eggs
+*.eggs/
 .installed.cfg
 lib
 lib64
@@ -40,7 +40,6 @@ nosetests.xml
 ##
 .metadata
 .gradle
-bin/
 tmp/
 *.tmp
 *.bak
@@ -77,3 +76,5 @@ coverage.xml
 cover/
 /.noseids
 /wltp-*
+/.project
+/.pydevproject

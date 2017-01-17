@@ -9,12 +9,20 @@
 Defines the schema, defaults and validation operations for the data consumed and produced by the :class:`~wltp.experiment.Experiment`.
 
 The model-instance is managed by :class:`pandel.Pandel`.
+
+Example-code to get WLTP-data::
+
+    from wltp.model  import _get_wltc_data
+    cycle_data = _get_wltc_data()
+    
+    for cls, value in cycle_data['classes'].items():
+        cycle = np.array(value['cycle'])
+        print('%s: \n%s' % (cls, cycle))
 """
 
 from __future__ import division, print_function, unicode_literals
 
-from collections import Mapping
-import functools
+from collections import Mapping, Sized
 import json
 import logging
 from textwrap import dedent
@@ -61,7 +69,7 @@ def _get_model_base():
     """The base model for running a WLTC experiment.
 
     It contains some default values for the experiment (ie the default 'full-load-curve' for the vehicles).
-    But note that it this model is not valid - you need to iverride its attributes.
+    But note that it this model is not valid - you need to override its attributes.
 
     :return: a tree with the default values for the experiment.
     """
@@ -176,6 +184,8 @@ def default_load_curve():
 def _get_wltc_data():
     """The WLTC-data required to run an experiment (the class-cycles and their attributes)..
 
+    Prefer to access wltc-data through :samp:`{model}['wltc_data']`.
+
     :return: a tree
     """
 
@@ -270,10 +280,12 @@ def _get_model_schema(additional_properties=False, for_prevalidation=False):
                     },
                     'n_min': {
                         'title': 'minimum engine revolutions',
-                        'type': ['integer', 'null'],
+                        'type': ['array', 'integer', 'null'],
                         'description': dedent("""
-                        minimum engine revolutions for gears > 2 when the vehicle is in motion. The minimum value
-                        is determined by the following equation:
+                        Either a number with the minimum engine revolutions for gears > 2 when the vehicle is in motion,
+                        or an array with the exact `n_min` for each gear (array must have length equal to gears).
+                        
+                        If unspecified, the minimum `n` for gears > 2 is determined by the following equation:
                             n_min = n_idle + f_n_min(=0.125) * (n_rated - n_idle)
                         Higher values may be used if requested by the manufacturer, by setting this one.
                        """),
@@ -389,8 +401,11 @@ def _get_model_schema(additional_properties=False, for_prevalidation=False):
                         'default': 1.1,
                     },
                     'f_safety_margin': {
-                        'description': 'Safety-margin factor for load-curve due to transitional effects (Annex 2-3.3, p72).',
-                        'type': [ 'number', 'null'],
+                        'description': dedent("""
+                            Safety-margin factor for load-curve due to transitional effects (Annex 2-3.3, p72).
+                            If array, its length must match those of the `gear_ratios`.
+                        """),
+                        'type': [ 'array', 'number', 'null'],
                         'default': 0.9,
                     },
                     'f_n_max': {
@@ -542,30 +557,86 @@ def _get_wltc_schema():
     return schema
 
 
-def get_class_parts_limits(cls, mdl=None):
+
+def get_class_part_names(cls_name=None):
+    """
+    :param str cls_name: one of 'class1', ..., 'class3b', if missing, returns all 4 part-names
+    """
+    part_names = ['Low', 'Medium', 'High', 'ExtraHigh']
+    
+    if cls_name:
+        wltc_data = _get_wltc_data()
+        cls = wltc_data['classes'][cls_name]
+        part_names = part_names[:len(cls['parts'])]
+        
+    return part_names
+
+def get_class_parts_limits(cls_name, mdl=None, edges=False):
     """
     Parses the supplied in wltc_data and extracts the part-limits for the specified class-name.
     
-    :param str cls: one of 'class1', ..., 'class3b'
+    :param str cls_name: one of 'class1', ..., 'class3b'
     :param mdl: the mdl to parse wltc_data from, if ommited, parses the results of :func:`_get_wltc_data()`
-    :return: a list with the part-limits, ie for class-3a these are 3 numbers 
+    :param edges: when `True`, embeds internal limits into (0, len)
+    :return: a list of ints with the part-limits, ie for class-3a these are 3 numbers 
     """
     if mdl:
         wltc_data = mdl['wltc_data']
     else:
         wltc_data = _get_wltc_data()
         
-    cls = wltc_data['classes'][cls]
-    part_limits = [end+0.5 for (start, end) in cls['parts'][:-1]]
-    
+    cls = wltc_data['classes'][cls_name]
+    parts = cls['parts']
+    parts = parts if edges else parts[:-1]
+    part_limits = [end+0.5 for (start, end) in parts]
+    if edges:
+        part_limits.insert(0, 0)
+         
     return part_limits
 
+def get_class_parts_index(cls_name, index=None, mdl=None):
+    """
+    Returns an array equally sized as `index` with zero-based ints denoting the part each second of the cycle belong to.
+    
+    :param str cls_name: one of 'class1', ..., 'class3b'
+    :param list/array index: (Optional) the index to "segment" into parts, defaults to 1Hz class's index  
+    :return: a numpy-array of integers with length equal to `index`, or if not given, 
+                        the default length of the requested class otherwise
 
-def get_class_pmr_limits(mdl=None):
+    Get class-checksums example::
+    
+        >>> from wltp import model
+        >>> import pandas as pd
+        
+        >>> cls = 'class2'
+        >>> part_limits = model.get_class_parts_index(cls)
+        >>> part_limits
+        array([   0,  589, 1022, 1477, 1800])
+
+        >>> cls_data = model._get_wltc_data()['classes'][cls]
+        >>> cycle = pd.DataFrame(cls_data['cycle'])
+        >>> cycle.groupby(pd.cut(cycle.index, part_limits)).sum()
+                            0
+        (0, 589]      11162.2
+        (589, 1022]   17054.3
+        (1022, 1477]  24450.6
+        (1477, 1800]  28869.8
+        
+    """
+    limits = get_class_parts_limits(cls_name, mdl=mdl, edges=True)
+    limits = np.array(limits).astype(np.int)
+    
+    if index:
+        index = np.asarray(index)
+
+    return limits
+
+def get_class_pmr_limits(mdl=None, edges=False):
     """
     Parses the supplied in wltc_data and extracts the part-limits for the specified class-name.
     
-    :param mdl: the mdl to parse wltc_data from, if ommited, parses the results of :func:`_get_wltc_data()`
+    :param mdl: the mdl to parse wltc_data from, if omitted, parses the results of :func:`_get_wltc_data()`
+    :param edges: when `True`, embeds internal limits into (0, len)
     :return: a list with the pmr-limits (2 numbers) 
     """
     if mdl:
@@ -574,8 +645,9 @@ def get_class_pmr_limits(mdl=None):
         wltc_data = _get_wltc_data()
         
     pmr_limits_pairs = [cls['pmr_limits'] for cls in wltc_data['classes'].values()]
-    pmr_limits = functools.reduce(lambda a,b:a+b, pmr_limits_pairs)
-    pmr_limits = sorted(list(set(pmr_limits)))[1:-1]    ## Exclude 0 and inf
+    pmr_limits = sorted(set(it.chain(*pmr_limits_pairs)))
+    if not edges:
+        pmr_limits = pmr_limits[1:-1]    ## Exclude 0 and inf
     
     return pmr_limits
 
@@ -650,6 +722,8 @@ def validate_model(mdl, additional_properties=False, iter_errors=False, validate
     validators = [
         validator.iter_errors(mdl),
         yield_load_curve_errors(mdl),
+        yield_n_min_errors(mdl),
+        yield_safety_margin_errors(mdl),
         yield_forced_cycle_errors(mdl, additional_properties)
     ]
     errors = it.chain(*[v for v in validators if not v is None])
@@ -708,6 +782,34 @@ def yield_load_curve_errors(mdl):
         vehicle['full_load_curve'] = wot
     except (KeyError, PandasError) as ex:
         yield ValidationError('Invalid Full-load-curve, due to: %s' % ex, cause= ex)
+
+def yield_n_min_errors(mdl):
+    vehicle = mdl['vehicle']
+    ngears = len(vehicle['gear_ratios'])
+    n_min = vehicle.get('n_min')
+    if not n_min is None:
+        try:
+                if isinstance(n_min, Sized):
+                    if len(n_min) != ngears:
+                        yield ValidationError("Length mismatch of n_min(%s) != gear_ratios(%s)!"% (len(n_min), ngears))
+                else:
+                    vehicle['n_min'] = [n_min] * ngears
+        except PandasError as ex:
+            yield ValidationError("Invalid 'n_min', due to: %s" % ex, cause= ex)
+
+def yield_safety_margin_errors(mdl):
+    params = mdl['params']
+    f_safety_margin = params['f_safety_margin']
+    ngears = len(mdl['vehicle']['gear_ratios'])
+    try:
+        if isinstance(f_safety_margin, Sized):
+            if len(f_safety_margin) != ngears:
+                yield ValidationError("Length mismatch of f_safety_margin(%s) != gear_ratios(%s)!"% (len(f_safety_margin), ngears))
+        else:
+            params['f_safety_margin'] = [f_safety_margin] * ngears
+    except PandasError as ex:
+        yield ValidationError("Invalid 'gear_n_min', due to: %s" % ex, cause= ex)
+
 
 def yield_forced_cycle_errors(mdl, additional_properties):
     params = mdl['params']

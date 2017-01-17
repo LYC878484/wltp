@@ -16,7 +16,40 @@
 import re
 import sys, os, io
 
-
+print("python exec: %s"% sys.executable)
+print("sys.path: %s"%sys.path)
+try:
+    import numpy
+    print("numpy: %s, %s" % (numpy.__version__, numpy.__file__))
+except ImportError:
+    print("no numpy")
+try:
+    import scipy
+    print("scipy: %s, %s" % (scipy.__version__, scipy.__file__))
+except ImportError:
+    print("no scipy")
+try:
+    import pandas
+    print("pandas: %s, %s" % (pandas.__version__, pandas.__file__))
+except ImportError:
+    print("no pandas")
+try:
+    import matplotlib
+    print("matplotlib: %s, %s" % (matplotlib.__version__, matplotlib.__file__))
+except ImportError:
+    print("no matplotlib")
+try:
+    import IPython
+    print("ipython: %s, %s" % (IPython.__version__, IPython.__file__))
+except ImportError:
+    print("no ipython")
+try:
+    import mock
+    print("mock: %s, %s" % (mock.__version__, mock.__file__))
+except ImportError:
+    print("no mock")
+    
+    
 projname = 'wltp'
 mydir = os.path.dirname(__file__)
 
@@ -41,31 +74,30 @@ sys.path.insert(0, os.path.abspath('../'))
 ## Mock C-libraries (numpy/pandas, etc) so that `autodoc` sphinx-extension
 #    can import sources.
 #     From http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+#     Also tried but fails: http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
 #
 if on_rtd:
-    from unittest.mock import MagicMock
+    try:
+        from unittest.mock import MagicMock
+    except ImportError:
+        from mock import Mock as MagicMock
 
     class Mock(MagicMock):
         @classmethod
         def __getattr__(cls, name):
-            if name in ('__file__', '__path__'):
-                return '/dev/null'
-            elif name[0] == name[0].upper():
-                mockType = type(name, (), {})
-                mockType.__module__ = __name__
-                return mockType
-            else:
-                return Mock()
+            return Mock()
 
-    MOCK_MODULES = [
+    MOCK_MODULES =  [
+        'xlwings' ## Mock-out because it depends on win32.
     ]
-    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = Mock()
 
-## Trick from https://github.com/rjw57/dtcwt/blob/0.9.0/docs/conf.py
+## Trick from https://github.com/rtfd/readthedocs.org/issues/283
 # On read the docs we need to use a different CDN URL for MathJax which loads
 # over HTTPS.
 if on_rtd:
-    mathjax_path = 'https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+    mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 ## Make autodoc always includes constructors.
 #    From http://stackoverflow.com/a/5599712/548792
@@ -236,7 +268,7 @@ html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-#html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = '%b %d, %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -301,7 +333,8 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'wltp.tex', 'wltp Documentation',
-   'Kostis Anagnostopoulos', 'manual'),
+   "Authors: see '4.5 Development Team' section", 
+   'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -1,3 +1,3 @@
-## Authoritative project's version-info:
-__version__ = u"0.0.9-alpha.2"
-__updated__ = "2014-10-29 17:54:16"
+"""Authoritative project's version-info"""
+__version__ = "0.0.9-alpha.4"          ## Semantic-version: Update identifiers also in README.rst.
+__updated__ = "2015-10-05 19:36:14"

@@ -1,7 +1,6 @@
-=============================
+#############################
 *wltp* gear-shifts calculator
-=============================
-
+#############################
 |dev-status| |build-status| |cover-status| |docs-status| |pypi-status| |downloads-count| |github-issues|
 
 :release:       0.0.9-alpha.4
@@ -23,18 +22,20 @@ driving-cycles, according to :term:`UNECE`'s :abbr:`GTR (Global Technical Regula
     **Figure 1:** *WLTP cycle for class-3b Vehicles*
 
 
-.. Attention:: This project is still in *alpha* stage.  Its results are not
-    considered "correct", and official approval procedures should not rely on them.
+.. Attention:: This *wltp* python project is still in *alpha* stage.  Its results are not
+    considered "correct", and no experimental procedures should rely currently on them.
+
     Some of the known deficiencies are described in these places:
 
     * In the :doc:`CHANGES`.
-    * Presented in the diagrams of the :ref:`metrics` section.
+    * Presented in the diagrams of the :doc:`metrics` section.
     * Imprinted in the :mod:`~wltp.test.wltp_db_tests` test-case
       (automatically comparared with a pre-determined set of vehicles from Heinz-db on each build)
       Currently, mean rpm differ from Heinz-db < 0.5% and gears diff < 5% for a 1800-step class-3 cycle.
 
-
-
+.. _end-opening:
+.. contents:: Table of Contents
+  :backlinks: top
 .. _begin-intro:
 
 Introduction
@@ -50,78 +51,100 @@ and any warnings.  It does not calculate any |CO2| emissions.
 An "execution" or a "run" of an experiment is depicted in the following diagram::
 
                .---------------------.                         .----------------------------.
-              ;     Input-Model     ;                         ;        Output-Model        ;
+              ;   Input-DataModel   ;                         ;      Output-DataModel       ;
              ;---------------------;                         ;----------------------------;
             ; +--vehicle          ;     ____________        ; +---...                    ;
            ;  +--params          ;     |            |      ;  +--cycle_run:             ;
-          ;       +--wltc_data  ;  ==> | Experiment | ==> ;      t  v_class gear ...   ;
-         ;                     ;       |____________|    ;      --------------------  ;
-        ;                     ;                         ;       00      0.0    1     ;
+          ;       +--wltc_data  ;  ==> |   Cycle    | ==> ;      t  v_class gear ...   ;
+         ;                     ;       | Generator  |    ;      --------------------  ;
+        ;                     ;        |____________|   ;       00      0.0    1     ;
        ;                     ;                         ;        01      1.3    1    ;
       ;                     ;                         ;         02      5.5    1   ;
      ;                     ;                         ;          ...               ;
     '---------------------'                         '----------------------------.
 
-The *Input & Output Data* are instances of :dfn:`pandas-model`, trees of strings and numbers, assembled with:
+The *Input & Output DataModels* are instances of :dfn:`pandas-model`, trees of strings and numbers, assembled with:
 
-* sequences,
-* dictionaries,
-* :class:`pandas.DataFrame`,
-* :class:`pandas.Series`, and
-* URI-references to other model-trees.
+- sequences,
+- dictionaries,
+- :class:`pandas.DataFrame`,
+- :class:`pandas.Series`, and
+- URI-references to other model-trees.
 
 
 Quick-start
 -----------
-Assuming a working python-environment, open a *command-shell*  
-(ie in *Windows* use :program:`cmd.exe` BUT with with Python in its :envvar:`PATH`)
-and try the following commands 
 
-:Installation: ``$ pip install wltp --pre -U``
-:Cmd-line: ``$ wltpcmd --help`` 
-:GUI: ``$ wltpcmd --gui`` (use it to explore model)
-:Excel: ``$ wltpcmd --excelrun`` (*Windows*/*OS X* only)
+.. Note::
+    The program runs on **Python-2.7+** and **Python-3.3+** (preferred) and requires
+    **numpy/scipy**, **pandas** and **win32** libraries along with their *native backends* to be installed.
+    If you do not have such an environment already installed, please read :doc:`install` section below for
+    suitable distributions such as |winpython|_ or |anaconda|_.
+
+Assuming that you have a working python-environment, open a *command-shell*,
+(in *Windows* use :program:`cmd.exe` BUT ensure :program:`python.exe` is in its :envvar:`PATH`),
+you can try the following commands:
+
+.. Tip::
+    The commands beginning with ``$``, below, imply a *Unix* like operating system with a *POSIX* shell
+    (*Linux*, *OS X*). Although the commands are simple and easy to translate in its *Windows* ``cmd.exe`` counterpart,
+    it would be worthwile to install `Cygwin <https://www.cygwin.com/>`_ to get the same environment on *Windows*.
+    If you choose to do that, include also the following packages in the *Cygwin*'s installation wizard::
+
+        * git, git-completion
+        * make, zip, unzip, bzip2
+        * openssh, curl, wget
+
+    But do not install/rely on cygwin's outdated python environment.
+
+:Install:
+    .. code-block:: bash
+
+        $ pip install wltp                      ## Use `--pre` if version-string has a build-suffix.
+        $ wltp --winmenus                       ## Adds StartMenu-items, Windows only.
+
+    Or in case you need the very latest from `master` branch :
+
+    .. code-block:: bash
+
+        $ pip install git+git://github.com/ankostis/wltp.git@master --pre
+
+    See: :doc:`install`
+
+:Cmd-line:
+    .. code-block:: bash
+
+        $ wltp --version
+        0.0.9-alpha.4
+
+        $ wltp --help
+        ...
+
+    See: :ref:`cmd-line-usage`
+
+:GUI:
+    .. code-block:: bash
+
+        $ wltp --gui`                           ## For exploring model, but not ready yet.
+
+:Excel:
+    .. code-block:: bash
+
+        $ wltp --excelrun                       ## Windows & OS X only
+
+    See: :ref:`excel-usage`
+
 :Python-code:
     .. code-block:: python
-    
+
         from wltp.experiment import Experiment
-    
+
         input_model = { ... }           ## See also "Python Usage" for model contents.
         exp = Experiment(input_model)
         output_model = exp.run()
         print('Results: \n%s' % output_model['cycle_run'])
 
-
-.. Tip:: 
-    To install *python*, you can try the free (as in beer) distribution
-    `Anaconda <http://docs.continuum.io/anaconda/pkg-docs.html>`_ for *Windows* and *OS X*, or
-    the totally free `WinPython <http://winpython.sourceforge.net/>`_ distribution, but only for *Windows*:
-
-    * For *Anaconda* you may need to install project's dependencies manually (see :file:`setup.py`)
-      using :command:`conda`.
-    * The most recent version of *WinPython* (python-3.4) although it has just 
-      `changed maintainer  <http://sourceforge.net/projects/stonebig.u/files/>`_,
-      it remains a higly active project, and it can even compile native libraries using an installations of 
-      *Visual Studio*, if available
-      (required for instance when upgrading ``numpy/scipy``, ``pandas`` or ``matplotlib`` with :command:`pip`).
-      
-      Remember also to *Register your WinPython installation* from 
-      :menuselection:`Start menu --> All Programs --> WinPython --> WinPython ControlPanel`, and then
-      :menuselection:`Options --> Register Ditribution`.
-      
-.. Tip::
-    The commands above beginning with ``$`` imply a *unix* like operating system with a *POSIX* shell
-    (*Linux*, *OS X*). If you're using *Windows*, you'll have to run their counterparts
-    in the *windows command shell* :program:`cmd.exe`.
-
-    Although the commands are simple and easy to translate , it would be worthwile to install
-    `cygwin <https://www.cygwin.com/>`_ to get the same environment on *Windows* machines.
-    If you choose to do that, make sure that in the *cygwin*'s installation wizard the following packages
-    are also included::
-
-        * git, git-completion
-        * make, zip, unzip, bzip2
-        * openssh, curl, wget
+    See: :ref:`python-usage`
 
 
 
@@ -129,34 +152,136 @@ and try the following commands
 
 Install
 =======
-Current |version| runs on Python-2.7+ and Python-3.3+ but 3.3+ is the preferred one, 
-i.e, the desktop UI runs only with it.
+Current version(|version|) runs on **Python-2.7+** and **Python-3.3+** and requires
+**numpy/scipy**, **pandas** and **win32** libraries along with their *native backends* to be installed.
 
-You can install (or upgrade) the project directly from the `PyPI <https://pypi.python.org/pypi>`_ repository
-by typing :command:`pip` in the console:
+It has been tested under *Windows* and *Linux* and *Python-3.3+* is the preferred interpreter,
+i.e, the *Excel* interface and desktop-UI runs only with it.
 
-.. code-block:: console
+It is distributed on `Wheels <https://pypi.python.org/pypi/wheel>`_.
 
-    $ pip install wltp --pre --upgrade          ## Use `pip3` if both python-2 & 3 installed.
 
-.. Tip:
-    To debug the installation, you can export a non-empty :envvar:`DISTUTILS_DEBUG` 
-    and *distutils* will print detailed information about what it is doing and/or 
+Python installation
+-------------------
+
+.. Warning::
+    On *Windows* it is strongly suggested **NOT to install the standard CPython distribution**,
+    unless:
+
+    a) you have *administrative priviledges*,
+    b) you are an experienced python programmer, so that
+    c) you know how to hunt dependencies from *PyPi* repository and/or
+       the `Unofficial Windows Binaries for Python Extension Packages <http://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
+
+As explained above, this project depends on packages with *native-backends* that require the use
+of *C* and *Fortran* compilers to build from sources.
+To avoid this hassle, you should choose one of the user-friendly distributions suggested below.
+
+Below is a matrix of the two suggested self-wrapped python distributions for running this program
+(we excluded here default *python* included in *linux*). Both distributions:
+
+- are free (as of freedom),
+- do not require *admin-rights* for installation in *Windows*, and
+- have been tested to run successfully this program (also tested on default *linux* distros).
+
++-----------------+-------------------------------------------+-------------------------------------------+
+| *Distributions* | |winpython|_                              | |anaconda|_                               |
+|                 |                                           |                                           |
++=================+===========================================+===========================================+
+| *Platform*      | **Windows**                               | **Windows**, **Mac OS**, **Linux**        |
++-----------------+-------------------------------------------+-------------------------------------------+
+| *Ease of*       | Fair                                      | - *Anaconda:* Easy                        |
+|                 |                                           | - *MiniConda:* Moderate                   |
+|                 | Currently (March-2015) it                 |                                           |
+|                 | requires fiddling with the                |                                           |
+| *Installation*  | :envvar:`PATH` after install.             |                                           |
+|                 |                                           |                                           |
+|                 |                                           |                                           |
++-----------------+-------------------------------------------+-------------------------------------------+
+| *Ease of Use*   | Easy                                      | Moderate                                  |
+|                 |                                           |                                           |
+|                 |                                           | Should use :command:`conda` and/or        |
+|                 |                                           | :command:`pip`                            |
+|                 |                                           | depending on whether a package            |
+|                 |                                           | contains native libraries                 |
+|                 |                                           |                                           |
++-----------------+-------------------------------------------+-------------------------------------------+
+| *# of Packages* | Only what's included in the               | Many 3rd-party packages                   |
+|                 | downloaded-archive                        | uploaded by users                         |
+|                 |                                           |                                           |
+|                 |                                           |                                           |
++-----------------+-------------------------------------------+-------------------------------------------+
+| *Notes*         | After installation, see `faq` for:        | - Check also the lighter `miniconda       |
+|                 |                                           |   <http://conda.pydata.org/               |
+|                 | - Registering WinPython installation      |   miniconda.html>`_.                      |
+|                 | - Adding your installation in             | - For installing native-dependencies      |
+|                 |   :envvar:`PATH`                          |   with :command:`conda` see files:        |
+|                 |                                           |   - :file:`requirements/miniconda.txt`    |
+|                 |                                           |   - :file:`.travis.yaml`                  |
+|                 |                                           |                                           |
++-----------------+-------------------------------------------+-------------------------------------------+
+|                 | Check also installation instructions from `the  pandas site                           |
+|                 | <http://pandas.pydata.org/pandas-docs/stable/install.html>`_.                         |
+|                 |                                                                                       |
++-----------------+-------------------------------------------+-------------------------------------------+
+
+
+
+Package installation
+--------------------
+
+Before installing it, make sure that there are no older versions left over
+on the python installation you are using.
+To cleanly uninstall it, run this command until you cannot find any project installed:
+
+.. code-block:: bash
+
+    $ pip uninstall wltp                        ## Use `pip3` if both python-2 & 3 are in PATH.
+
+
+You can install the project directly from the |pypi|_ the "standard" way,
+by typing the :command:`pip` in the console:
+
+  .. code-block:: bash
+
+      $ pip install wltp
+
+- If you want to install a *pre-release* version (the version-string is not plain numbers, but
+  ends with ``alpha``, ``beta.2`` or something else), use additionally :option:`--pre`.
+
+.. code-block:: bash
+
+    $ pip install wltp
+
+- Also you can install the very latest version straight from the sources:
+
+  .. code-block:: bash
+
+      $ pip install git+git://github.com/ankostis/wltp.git  --pre
+
+- If you want to upgrade an existing instalation along with all its dependencies,
+  add also :option:`--upgrade` (or :option:`-U` equivalently), but then the build might take some
+  considerable time to finish.  Also there is the possibility the upgraded libraries might break
+  existing programs(!) so use it with caution, or from within a |virtualenv|_.
+
+- To install it for different Python environments, repeat the procedure using
+  the appropriate :program:`python.exe` interpreter for each environment.
+
+- .. Tip::
+    To debug installation problems, you can export a non-empty :envvar:`DISTUTILS_DEBUG`
+    and *distutils* will print detailed information about what it is doing and/or
     print the whole command line when an external program (like a C compiler) fails.
-    
 
-Notice that :option:`--pre` is required, since all released packages so far were *pre*-release (``-alpha``) versions.
-Also :option:`--upgrade` (or `-U`) is only required if you already have an old installation of wltp 
-and need to upgrade it.
 
-To check whether the installation has been successful, check that the :command:`wltpcmd` script works,
-which must have been installed somewhere in your :envvar:`PATH`:
+After installation, it is important that you check which version is visible in your :envvar:`PATH`:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ wltpcmd --version                      ## Check which version is installed.
-    0.0.9-alpha.2
+    $ wltp --version
+    0.0.9-alpha.4
 
+
+To install for different Python versions, repeat the procedure for every required version.
 
 
 
@@ -167,60 +292,66 @@ of the GTR it implements.
 Given a version number ``MAJOR.MINOR.PATCH``, the ``MAJOR`` part tracks the GTR phase implemented.
 See the "GTR version matrix" section in :doc:`CHANGES` for the mapping of MAJOR-numbers to GTR versions.
 
-To install an older version issue the console command:
+To install an older released version issue the console command:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ pip install wltp=1.1.1                    ## Use `--pre` if neccessary.
+    $ pip install wltp=1.1.1                    ## Use `--pre` if version-string has a build-suffix.
 
-If you have another version already installed, you have to use :option:`--ignore-installed` (or `-I`).
-For using the specific version, check this (untested)
-`stackoverflow question <http://stackoverflow.com/questions/6445167/force-python-to-use-an-older-version-of-module-than-what-i-have-installed-now>`_ .
+or alternatively straight from the sources:
 
-Of course it is better to install each version in a separate |virtualenv|_ and shy away from all this.
+.. code-block:: bash
+
+    $ pip install git+git://github.com/ankostis/wltp.git@v0.0.9-alpha.3.1  --pre
+
+Ofcourse you can substitute `v0.0.9-alpha.3.1` with any slug from "commits", "branches" or "releases"
+that you will find on project's `github-repo <https://github.com/ankostis/wltp>`_).
+
+.. Note::
+    If you have another version already installed, you have to use :option:`--ignore-installed` (or :option:`-I`).
+    For using the specific version, check this (untested)
+    `stackoverflow question <http://stackoverflow.com/questions/6445167/force-python-to-use-an-older-version-of-module-than-what-i-have-installed-now>`_ .
+
+    You can install each version in a separate |virtualenv|_ and shy away from all this.
+    Check
 
 
 Installing from sources
 -----------------------
 If you download the sources you have more options for installation.
+There are various methods to get hold of them:
 
-Assuming you have a working installation of `git <http://git-scm.com/>`_)
-you can fetch and install the latest version of the project with the following series of commands:
+* Download the *source* distribution from |pypi|_.
+* Download a `release-snapshot from github <https://github.com/ankostis/wltp/releases>`_
+* Clone the *git-repository* at *github*.
 
-.. code-block:: console
+  Assuming you have a working installation of `git <http://git-scm.com/>`_
+  you can fetch and install the latest version of the project with the following series of commands:
 
-    $ git clone "https://github.com/ankostis/wltp.git" wltp.git
-    $ cd wltp.git
-    $ pip install .                                 ## Use `pip3` if both python-2 & 3 installed.
+  .. code-block:: bash
 
-
-To install for different Python versions, repeat step 3 for every required version.
-
-Particularly for the latest *WinPython* environments (*Windows* / *OS X*) you can install dependencies with: 
-
-.. code-block:: console
-
-    $ pip install -r WinPython_requirements.txt .
+      $ git clone "https://github.com/ankostis/wltp.git" wltp.git
+      $ cd wltp.git
+      $ python setup.py install                                 ## Use `python3` if both python-2 & 3 installed.
 
 
-The previous command install dependencies in the system's folders.
-If you want to avoid that (because, for instance, you do not have *admin-rights*), but 
-you do not want to use a |virtualenv|_, you can install dependencies inside the project-folder 
-with this command:
+When working with sources, you need to have installed all libraries that the project depends on:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ python setup.py install                       ## Use `python3` if you have installed both python-2 & 3.
-    
+    $ pip install -r requirements/execution.txt .
 
-The previous command installs just the latest version of the project.
-If you wish to link the project's sources with your python environment, install the project 
+
+The previous command installs a "snapshot" of the project as it is found in the sources.
+If you wish to link the project's sources with your python environment, install the project
 in `development mode <http://pythonhosted.org/setuptools/setuptools.html#development-mode>`_:
 
-.. code-block:: console
+.. code-block:: bash
 
     $ python setup.py develop
 
+
+.. Note:: This last command installs any missing dependencies inside the project-folder.
 
 
 
@@ -238,9 +369,8 @@ The files and folders of the project are listed below::
     |   +--pyplots/     ## (scripts) Plot the metric diagrams embeded in the README
     +--devtools/        ## (scripts) Preprocessing of WLTC data on GTR and the wltp_db
     |   +--run_tests.sh ## (script) Executes all TestCases
-    +--wltpcmd          ## (script) The cmd-line entry-point script for the calculator
     +--setup.py         ## (script) The entry point for `setuptools`, installing, testing, etc
-    +--requirements.txt ## The installation dependencies.
+    +--requirements/    ## (txt-files) Various pip-dependencies for tools.
     +--README.rst
     +--CHANGES.rst
     +--LICENSE.txt
@@ -251,6 +381,8 @@ The files and folders of the project are listed below::
 
 Usage
 =====
+.. _cmd-line-usage:
+
 Cmd-line usage
 --------------
 .. Warning:: Not implemented in yet.
@@ -262,25 +394,25 @@ and in a *single* command.  To have precise control over the inputs and outputs
 you have to run the experiments using the API python, as explained below.
 
 
-The entry-point script is called :program:`wltpcmd`, and it must have been placed in your :envvar:`PATH`
+The entry-point script is called :program:`wltp`, and it must have been placed in your :envvar:`PATH`
 during installation.  This script can construct a *model* by reading input-data
 from multiple files and/or overriding specific single-value items. Conversely,
 it can output multiple parts of the resulting-model into files.
 
 To get help for this script, use the following commands:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ wltpcmd --help                         ## to get generic help for cmd-line syntax
+    $ wltp --help                               ## to get generic help for cmd-line syntax
     $ wltcmdp.py -M vehicle/full_load_curve     ## to get help for specific model-paths
 
 
 and then, assuming ``vehicle.csv`` is a CSV file with the vehicle parameters
 for which you want to override the ``n_idle`` only, run the following:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ wltpcmd -v \
+    $ wltp -v \
         -I vehicle.csv file_frmt=SERIES model_path=params header@=None \
         -m vehicle/n_idle:=850 \
         -O cycle.csv model_path=cycle_run
@@ -294,122 +426,107 @@ GUI usage
 For a quick-'n-dirty method to explore the structure of the model-tree and run an experiment,
 just run:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ wltpcmd --gui
+    $ wltp --gui
 
 
 
+.. _excel-usage:
 
 Excel usage
 -----------
 .. Attention:: Excel-integration requires Python 3 and *Windows* or *OS X*!
 
-In *Windows* and *OS X* you may utilize the excellent `xlwings <http://xlwings.org/quickstart/>`_ library 
+In *Windows* and *OS X* you may utilize the excellent `xlwings <http://xlwings.org/quickstart/>`_ library
 to use Excel files for providing input and output to the experiment.
 
 To create the necessary template-files in your current-directory you should enter:
 
 .. code-block:: console
 
-     $ wltpcmd --excel
-     
+     $ wltp --excel
 
-You could type instead :samp:`wltpcmd --excel {file_path}` to specify a different destination path.
 
-In *windows*/*OS X* you can type :samp:`wltpcmd --excelrun` and the files will be created in your home-directory 
+You could type instead :samp:`wltp --excel {file_path}` to specify a different destination path.
+
+In *windows*/*OS X* you can type :samp:`wltp --excelrun` and the files will be created in your home-directory
 and the excel will open them in one-shot.
 
 All the above commands creates two files:
 
 :file:`wltp_excel_runner.xlsm`
     The python-enabled excel-file where input and output data are written, as seen in the screenshot below:
-    
+
     .. image:: docs/xlwings_screenshot.png
         :scale: 50%
         :alt: Screenshot of the `wltp_excel_runner.xlsm` file.
-        
-    After opening it the first tie, enable the macros on the workbook, select the python-code at the left and click 
+
+    After opening it the first tie, enable the macros on the workbook, select the python-code at the left and click
     the :menuselection:`Run Selection as Pyhon` button; one sheet per vehicle should be created.
 
-    The excel-file contains additionally appropriate *VBA* modules allowing you to invoke *Python code* 
+    The excel-file contains additionally appropriate *VBA* modules allowing you to invoke *Python code*
     present in *selected cells* with a click of a button, and python-functions declared in the python-script, below,
-    using the `mypy` namespace. 
-    
-    To add more input-columns, you need to set as column *Headers* the *json-pointers* path of the desired 
-    model item (see `Python usage`_ below,).
+    using the `mypy` namespace.
 
-:file:`wltp_excel_runner.py`   
-    Utility python functions used by the above xls-file for running a batch of experiments.  
-     
-    The particular functions included reads multiple vehicles from the input table with various  
-    vehicle characteristics and/or experiment parameters, and then it adds a new worksheet containing 
-    the cycle-run of each vehicle . 
+    To add more input-columns, you need to set as column *Headers* the *json-pointers* path of the desired
+    model item (see :ref:`python-usage` below,).
+
+:file:`wltp_excel_runner.py`
+    Utility python functions used by the above xls-file for running a batch of experiments.
+
+    The particular functions included reads multiple vehicles from the input table with various
+    vehicle characteristics and/or experiment parameters, and then it adds a new worksheet containing
+    the cycle-run of each vehicle .
     Of course you can edit it to further fit your needs.
 
 
 .. Note:: You may reverse the procedure described above and run the python-script instead.
-    The script will open the excel-file, run the experiments and add the new sheets, but in case any errors occur, 
-    this time you can debug them, if you had executed the script through *LiClipse*, or *IPython*! 
+    The script will open the excel-file, run the experiments and add the new sheets, but in case any errors occur,
+    this time you can debug them, if you had executed the script through *LiClipse*, or *IPython*!
 
-Some general notes regarding the python-code in excel-cells:
+Some general notes regarding the python-code from excel-cells:
 
-* The *VBA* `xlwings` module contains the code from the respective library; do not edit, but you may replace it 
-  with a latest version. 
-* You can read & modify the *VBA* `xlwings_ext` module with code that will run on each invocation 
-  to import libraries such as 'numpy' and 'pandas', or pre-define utility python functions.
-* The name of the python-module to import is automatically calculated from the name of the Excel-file,
-  and it must be valid as a python module-name.  Therefore do not use non-alphanumeric characters such as 
+* On each invocation, the predefined VBA module `pandalon` executes a dynamically generated python-script file
+  in the same folder where the excel-file resides, which, among others, imports the "sister" python-script file.
+  You can read & modify the sister python-script to import libraries such as 'numpy' and 'pandas',
+  or pre-define utility python functions.
+* The name of the sister python-script is automatically calculated from the name of the Excel-file,
+  and it must be valid as a python module-name.  Therefore do not use non-alphanumeric characters such as
   spaces(` `), dashes(`-`) and dots(`.`) on the Excel-file.
-* Double-quotes(") do not work for denoting python-strings in the cells; use single-quotes(') instead.
-* You cannot enter multiline or indentated python-code such as functions and/or  ```if-then-else`` expressions; 
-  move such code into the python-file. 
-* There are two pre-defined python variables on each cell, `cr` and `cc`, refering to "cell_row" and 
-  "cell_column" coordinates of the cell, respectively.  For instance, to use the right-side column as 
-  a poor-man's debugging aid, you may use this statement in a cell:
-
-  .. code-block:: python
-    
-    Range((cr, cc+1)).value = 'Some string or number'
-
-* On errors, the log-file is written in :file:`{userdir}/AppData/Roaming/Microsoft/Excel/XLSTART/xlwings_log.txt` 
+* On errors, a log-file is written in the same folder where the excel-file resides,
   for as long as **the message-box is visible, and it is deleted automatically after you click 'ok'!**
 * Read http://docs.xlwings.org/quickstart.html
 
-    
-.. Tip:: 
-    You can permanently enable your Excel installation to support *xlwings* by copying
-    the *VBA* modules of the demo-excel file ``xlwings`` and ``xlwings-ext`` into 
-    your :file:`PERSONAL.XLSB` workbook, as explaine here: 
-    http://office.microsoft.com/en-001/excel-help/copy-your-macros-to-a-personal-macro-workbook-HA102174076.aspx.
-    
-    You can even `add a new Ribbon-button <http://msdn.microsoft.com/en-us/library/bb386104.aspx>`_ 
-    to execute the selected cells as python-code.  Set this new button to invoke the ``RunSelectionAsPython()``
-    *VBA* function.
 
-    If you do the above, remember that *VBA*-code in your personal-workbook takes precedance over any code
-    present in your currently open workbook.
-
+.. _python-usage:
 
 Python usage
 ------------
-Here is a quick-start python :abbr:`REPL (Read-Eval-Print Loop)`-example to setup and run
-an *experiment*.  First run :command:`python` and try to import the project to check its version:
+Example python :abbr:`REPL (Read-Eval-Print Loop)` example-commands  are given below
+that setup and run an *experiment*.
+
+First run :command:`python` or :command:`ipython` and try to import the project to check its version:
 
 .. doctest::
 
     >>> import wltp
 
     >>> wltp.__version__            ## Check version once more.
-    '0.0.9-alpha.2'
+    '0.0.9-alpha.4'
 
     >>> wltp.__file__               ## To check where it was installed.         # doctest: +SKIP
     /usr/local/lib/site-package/wltp-...
 
 
-.. Tip::
-    You can copy the the python commands starting with ``>>>`` and ``...`` and copy paste them directly
-    into the python interpreter; it will remove these prefixes.
+.. Tip:
+    The use :command:`ipython` is preffered over :command:`python` since it offers various user-friendly
+    facilities, such as pressing :kbd:`Tab` for completions, or allowing you to suffix commands with `?` or `??`
+    to get help and read their source-code.
+
+    Additionally you can <b>copy any python commands starting with ``>>>`` and ``...``</b> and copy paste them directly
+    into the ipython interpreter; it will remove these prefixes.
+    But in :command:`python` you have to remove it youself.
 
 If everything works, create the :term:`pandas-model` that will hold the input-data (strings and numbers)
 of the experiment.  You can assemble the model-tree by the use of:
@@ -508,7 +625,7 @@ To access the time-based cycle-results it is better to use a :class:`pandas.Data
     >>> df.columns
     Index(['v_class', 'v_target', 'clutch', 'gears_orig', 'gears', 'v_real', 'p_available', 'p_required', 'rpm', 'rpm_norm', 'driveability'], dtype='object')
     >>> 'Mean engine_speed: %s' % df.rpm.mean()
-    'Mean engine_speed: 1917.0407829'
+    'Mean engine_speed: 1940.72109939'
     >>> df.describe()
                v_class     v_target     clutch   gears_orig        gears  \
     count  1801.000000  1801.000000       1801  1801.000000  1801.000000
@@ -518,8 +635,8 @@ To access the time-based cycle-results it is better to use a :class:`pandas.Data
     <BLANKLINE>
                 v_real  p_available   p_required          rpm     rpm_norm
     count  1801.000000  1801.000000  1801.000000  1801.000000  1801.000000
-    mean     50.356222    28.846639     4.991915  1917.040783     0.214898
-    std      32.336908    15.833262    12.139823   878.139758     0.195142
+    mean     50.356222    28.846639     4.991915  1940.721099     0.214898
+    std      32.336908    15.833262    12.139823   840.959339     0.195142
     ...
 
     >>> processor.driveability_report()                                             # doctest: +SKIP
@@ -559,9 +676,9 @@ Requirements
 ^^^^^^^^^^^^
 In order to run them interactively, ensure that the following requirements are satisfied:
 
-a. A `ipython-notebook server <http://ipython.org/notebook.html>`_ >= v2.x.x is installed for  *python-3*, 
+a. A `ipython-notebook server <http://ipython.org/notebook.html>`_ >= v2.x.x is installed for  *python-3*,
    it is up, and running.
-b. The *wltp* is installed on your system (see `wltp-install`_ above).
+b. The *wltp* is installed on your system (see :doc:`install` above).
 
 Instructions
 ^^^^^^^^^^^^
@@ -578,7 +695,7 @@ Enjoy!
 
 Getting Involved
 ================
-This project is hosted in **github**. 
+This project is hosted in **github**.
 To provide feedback about bugs and errors or questions and requests for enhancements,
 use `github's Issue-tracker <https://github.com/ankostis/wltp/issues>`_.
 
@@ -587,7 +704,7 @@ use `github's Issue-tracker <https://github.com/ankostis/wltp/issues>`_.
 Sources & Dependencies
 ----------------------
 To get involved with development, you need a POSIX environment to fully build it
-(*Linux*, *OSX* or *Cygwin* on *Windows*). 
+(*Linux*, *OSX* or *Cygwin* on *Windows*).
 
 First you need to download the latest sources:
 
@@ -614,20 +731,19 @@ First you need to download the latest sources:
 .. Admonition:: Liclipse IDE
     :class: note
 
-    Within the sources it is included a :file:`.project` file for the comprehensive
-    `LiClipse <https://brainwy.github.io/liclipse/>`_, an **eclipse** IDE pre-configured with the
-    excellent **PyDev** environment.  If you also choose to use it, you may have to reorder
-    the 1st python interpreter known to eclipse under
-    :menuselection:`&Windows --> &Preferences --> PyDev --> Interpreters --> Python Interpreter`,
-    since that is is the *default* interpreter, which is specified in the :file:`.project`.
-    You may change this choice of interpreter by :guilabel:`Right-clicking` on the Project and navigating
-    to :menuselection:`Properties --> PyDev - Interpreter/Grammar --> Interpreter`,
-    but you have to remember not commit this change in :file:`.project`.
-    
+    Within the sources there are two sample files for the comprehensive
+    `LiClipse IDE <http://www.liclipse.com/>`_:
+
+    * :file:`eclipse.project`
+    * :file:`eclipse.pydevproject`
+
+    Remove the `eclipse` prefix, (but leave the dot(`.`)) and import it as "existing project" from
+    Eclipse's `File` menu.
+
     Another issue is caused due to the fact that LiClipse contains its own implementation of *Git*, *EGit*,
     which badly interacts with unix *symbolic-links*, such as the :file:`docs/docs`, and it detects
     working-directory changes even after a fresh checkout.  To workaround this, Right-click on the above file
-    :menuselection:`Properties --> Team --> Advanced --> Assume Unchanged` 
+    :menuselection:`Properties --> Team --> Advanced --> Assume Unchanged`
 
 
 Then you can install all project's dependencies in *`development mode* using the :file:`setup.py` script:
@@ -650,7 +766,7 @@ Then you can install all project's dependencies in *`development mode* using the
     $ python setup.py build                             ## Check that the project indeed builds ok.
 
 
-You should now run the test-cases (see ref:`metrics`, below) to check
+You should now run the test-cases (see :doc:`metrics`) to check
 that the sources are in good shape:
 
 .. code-block:: console
@@ -691,25 +807,24 @@ The typical development procedure is like this:
 3. Rerun all test-cases to ensure that you didn't break anything,
    and check their *coverage* remain above 80%:
 
-    .. code-block:: console
+   .. code-block:: console
 
         $ python setup.py nosetests --with-coverage --cover-package wltp.model,wltp.experiment --cover-min-percentage=80
 
 
-    .. Tip:: You can enter just: ``python setup.py test_all`` instead of the above cmd-line
-        since it has been *aliased* in the :file:`setup.cfg` file.
-        Check this file for more example commands to use during development.
+   .. Tip:: You can enter just: ``python setup.py test_all`` instead of the above cmd-line
+       since it has been *aliased* in the :file:`setup.cfg` file.
+       Check this file for more example commands to use during development.
 
 
 4. If you made a rather important modification, update also the :doc:`CHANGES` file and/or
    other documents (i.e. README.rst).  To see the rendered results of the documents,
    issue the following commands and read the result html at :file:`build/sphinx/html/index.html`:
 
-    .. code-block:: console
+   .. code-block:: console
 
         $ python setup.py build_sphinx                  # Builds html docs
         $ python setup.py build_sphinx -b doctest       # Checks if python-code embeded in comments runs ok.
-
 
 5. If there are no problems, commit your changes with a descriptive message.
 
@@ -718,55 +833,8 @@ The typical development procedure is like this:
    You can check whether your merge-request indeed passed the tests by checking
    its build-status |build-status| on the integration-server's site (TravisCI).
 
-    .. Hint:: Skim through the small IPython developer's documentantion on the matter:
+   .. Hint:: Skim through the small IPython developer's documentantion on the matter:
         `The perfect pull request <https://github.com/ipython/ipython/wiki/Dev:-The-perfect-pull-request>`_
-
-
-
-.. _metrics:
-
-Tests, Metrics & Reports
-------------------------
-In order to maintain the algorithm stable, a lot of effort has been put
-to setup a series of test-case and metrics to check the sanity of the results
-and to compare them with the Heinz-db tool or other datasets included in the project.
-These tests can be found in the :file:`wltp/test/` folders.
-
-Additionally, below are *auto-generated* representative diagrams with the purpose
-to track the behavior and the evolution of this project.
-
-You can reuse the plotting code here for building nice ipython-notebooks reports,
-and (optionally) link them in the wiki of the project (see section above).
-The actual code for generating diagrams for these metrics is in :class:`wltp.plots` and it is invoked
-by scripts in the :file:`docs/pyplot/` folder.
-
-
-Mean Engine-speed / PMR
-^^^^^^^^^^^^^^^^^^^^^^^
-First the mean engine-speed of vehicles are compared with access-db tool, grouped by PMRs:
-
-.. plot:: pyplots/pmr_n_scatter.py
-
-
-Both tools generate the same rough engine speeds.  There is though a trend for this project
-to produce lower rpm's as the PMR of the vehicle increases.
-But it is difficult to tell what each vehicle does isolated.
-
-The same information is presented again but now each vehicle difference is drawn with an arrow:
-
-.. plot:: pyplots/pmr_n_arrows.py
-
-It can be seen now that this project's calculates lower engine-speeds for classes 1 & 3 but
-the trend is reversed for class 2.
-
-Below the mean-engine-speeds are drawn against the mean gear used, grouped by classes and class-parts
-(so that, for instance, a class3 vehicle corresponds to 3 points on the diagram):
-
-
-.. plot:: pyplots/gears_n_arrows_class_1.py
-.. plot:: pyplots/gears_n_arrows_class_2.py
-.. plot:: pyplots/gears_n_arrows_class_3.py
-
 
 
 
@@ -797,13 +865,13 @@ with the  :file:`devtools/preprocheinz.py` script.
 Cycles
 ^^^^^^
 
-.. figure:: docs/wltc_class1.png
+.. image:: docs/wltc_class1.png
     :align: center
-.. figure:: docs/wltc_class2.png
+.. image:: docs/wltc_class2.png
     :align: center
-.. figure:: docs/wltc_class3a.png
+.. image:: docs/wltc_class3a.png
     :align: center
-.. figure:: docs/wltc_class3b.png
+.. image:: docs/wltc_class3b.png
     :align: center
 
 
@@ -882,8 +950,17 @@ Glossary
 
 .. |CO2| replace:: CO\ :sub:`2`
 
-.. |virtualenv| replace:: Python, *the* best language around
+.. |virtualenv| replace::  *virtualenv* (isolated Python environment)
 .. _virtualenv: http://docs.python-guide.org/en/latest/dev/virtualenvs/
+
+.. |pypi| replace:: *PyPi* repo
+.. _pypi: https://pypi.python.org/pypi/wltp
+
+.. |winpython| replace:: *WinPython*
+.. _winpython: http://winpython.github.io/
+
+.. |anaconda| replace:: *Anaconda*
+.. _anaconda: http://docs.continuum.io/anaconda/
 
 .. |build-status| image:: https://travis-ci.org/ankostis/wltp.svg
     :alt: Integration-build status
@@ -891,7 +968,7 @@ Glossary
     :target: https://travis-ci.org/ankostis/wltp/builds
 
 .. |cover-status| image:: https://coveralls.io/repos/ankostis/wltp/badge.png?branch=master
-        :target: https://coveralls.io/r/ankostis/wltp?branch=master
+    :target: https://coveralls.io/r/ankostis/wltp?branch=master
 
 .. |docs-status| image:: https://readthedocs.org/projects/wltp/badge/
     :alt: Documentation status

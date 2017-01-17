@@ -25,33 +25,33 @@ if __name__ == '__main__':
     os.chdir(os.path.join(wltpdb.mydir, wltpdb.samples_dir))
 
     classes = [
-        ['class1',  dict(data_fmt='1k', data_kws=dict(fillstyle='none'), ref_fmt='1g', ref_kws=dict(fillstyle='none'))],  
-        ['class2',  dict(data_fmt='2k', data_kws=dict(fillstyle='none'), ref_fmt='2g', ref_kws=dict(fillstyle='none'))],  
+        ['class1',  dict(data_fmt='4k', data_kws=dict(fillstyle='none'), ref_fmt='4g', ref_kws=dict(fillstyle='none'))],  
+        ['class2',  dict(data_fmt='_k', data_kws=dict(fillstyle='none'), ref_fmt='_g', ref_kws=dict(fillstyle='none'))],  
         ['class3a', dict(data_fmt='ok', data_kws=dict(fillstyle='none'), ref_fmt='og', ref_kws=dict(fillstyle='none'))], 
-        ['class3b', dict(data_fmt='4k', data_kws=dict(fillstyle='none'), ref_fmt='4g', ref_kws=dict(fillstyle='none'), diff_label='Differences')], 
+        ['class3b', dict(data_fmt='+k', data_kws=dict(fillstyle='none'), ref_fmt='+g', ref_kws=dict(fillstyle='none'), diff_label='Differences')], 
     ]
     
     vehdata = data_meanN_pmr(gened_column='rpm', heinz_column='n')
     
-    axes = None
+    axes_tuple = None
     for (cls, kws) in classes:
         cls_data = vehdata[vehdata['wltc_class'] == cls]
         if cls_data.empty:
             continue
         (X, Y, Y_REF) = cls_data.pmr, cls_data.gened, cls_data.heinz
     
-        axes, artists = plots.plot_xy_diffs_scatter(
+        axes_tuple, artists = plots.plot_xy_diffs_scatter(
             X, Y, X, Y_REF,
             ref_label='Access-db %s'%cls, data_label='Python %s'%cls,
             title="Python vs Access-db(2sec rule)",
             x_label=r'$PMR [W/kg]$',
             y_label='$EngineSpeed [rpm]$',
-            axes=axes,
+            axes_tuple=axes_tuple,
             **kws
         )
 
-    axes[1].legend(loc=4, fancybox=True, framealpha=0.5)
-    axes[0].legend(loc=1, fancybox=True, framealpha=0.5)
+    axes_tuple[1].legend(loc=4, fancybox=True, framealpha=0.5)
+    axes_tuple[0].legend(loc=1, fancybox=True, framealpha=0.5)
 
     plt.show()
 
