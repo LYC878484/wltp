@@ -4,11 +4,14 @@
 
 |dev-status| |build-status| |cover-status| |docs-status| |pypi-status| |downloads-count| |github-issues|
 
-:Release:       |version|
-:Home:          https://github.com/ankostis/wltp
-:Documentation: https://wltp.readthedocs.org/
-:PyPI:          https://pypi.python.org/pypi/wltp
-:Copyright:     2013-2014 European Commission (`JRC-IET <http://iet.jrc.ec.europa.eu/>`_)
+:release:       0.0.9-alpha.4
+:date:          2015-10-05 19:36:14
+:documentation: https://wltp.readthedocs.org/
+:source:        https://github.com/ankostis/wltp
+:pypi-repo:     https://pypi.python.org/pypi/wltp
+:keywords:      UNECE, automotive, car, cars, driving, engine, fuel-consumption, gears, gearshifts,
+                rpm, simulation, simulator, standard, vehicle, vehicles, wltc, nedc
+:Copyright:     2013-2014 European Commission (`JRC-IET <https://ec.europa.eu/jrc/en/institutes/iet>`_)
 :License:       `EUPL 1.1+ <https://joinup.ec.europa.eu/software/page/eupl>`_
 
 The *wltp* is a python package that calculates the *gear-shifts* of Light-duty vehicles running the :term:`WLTP`
